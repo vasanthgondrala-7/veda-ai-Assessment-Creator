@@ -29,11 +29,11 @@ export default function App() {
 
   return (
     <Router>
-      <div className="flex h-screen bg-[#F5F5F5] font-sans selection:bg-orange-200">
+      <div className="flex h-screen bg-[#EAEAEA] font-sans selection:bg-orange-200 overflow-hidden print:h-auto print:overflow-visible print:bg-white">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-hidden relative print:overflow-visible print:bg-white">
           <Routes>
-            <Route path="/" element={<Navigate to="/assignments" replace />} />
+            <Route path="/" element={<Navigate to="/assignments/new" replace />} />
             <Route path="/assignments" element={<Dashboard />} />
             <Route path="/assignments/new" element={<CreateAssignment />} />
             <Route path="/assignments/:id" element={<AssignmentResult />} />

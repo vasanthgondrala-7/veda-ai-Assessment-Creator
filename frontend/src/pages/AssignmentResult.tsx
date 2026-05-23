@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, FileDown, RefreshCcw, Loader2, AlertCircle, Share2, Printer, Search, Bell, Edit } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { ChevronLeft, FileDown, RefreshCcw, Loader2, AlertCircle, Share2, Printer, Search, Bell, Edit, CheckCircle2 } from 'lucide-react';
+import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 import { useStore } from '../store/useStore';
 import { Assignment, GeneratedPaper } from '../types';
 
@@ -16,9 +16,20 @@ export default function AssignmentResult() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [showSuccessState, setShowSuccessState] = useState(false);
   
   const assignment = assignments.find(a => a.id === id);
   const paper = cachedPapers[id || ''];
+
+  useEffect(() => {
+    if (assignment?.status === 'completed' && !paper) {
+      setShowSuccessState(true);
+      const timer = setTimeout(() => {
+        setShowSuccessState(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [assignment?.status, paper]);
 
   useEffect(() => {
     if (!id) return;
@@ -61,27 +72,29 @@ export default function AssignmentResult() {
     try {
       const element = paperRef.current;
       
-      const canvas = await html2canvas(element, {
-         scale: 2,
-         useCORS: true,
-         logging: false,
+      const dataUrl = await toPng(element, {
+         pixelRatio: 2,
          backgroundColor: '#ffffff'
       });
       
       const imgWidth = 210;
       const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // We need to know the dimensions of the original element to calculate imgHeight
+      const imgProps = new jsPDF('p', 'mm', 'a4').getImageProperties(dataUrl);
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
       let heightLeft = imgHeight;
       let position = 0;
       
       const pdf = new jsPDF('p', 'mm', 'a4');
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
       
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
       
@@ -118,8 +131,8 @@ export default function AssignmentResult() {
   const isFailed = assignment.status === 'failed';
 
   return (
-    <div className="flex flex-col h-full bg-[#E5E7E9] overflow-y-auto">
-      <header className="h-[72px] px-8 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm sticky top-0 z-20">
+    <div className="flex flex-col h-full bg-[#E5E7E9] overflow-y-auto print:bg-white print:overflow-visible">
+      <header className="h-[72px] px-8 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm sticky top-0 z-20 print:hidden">
         <div className="flex items-center gap-4">
            <button onClick={() => navigate('/assignments')} className="text-gray-500 hover:bg-gray-100 p-2 rounded-lg">
              <ChevronLeft size={20} />
@@ -148,9 +161,9 @@ export default function AssignmentResult() {
         </div>
       </header>
 
-      <div className="flex-1 p-8 flex flex-col items-center">
+      <div className="flex-1 p-8 flex flex-col items-center print:p-0">
         
-        <div className="w-full max-w-[850px] bg-gray-900 text-white rounded-t-xl p-4 flex flex-col sm:flex-row items-center justify-between shadow-sm gap-4">
+        <div className="w-full max-w-[850px] bg-gray-900 text-white rounded-t-xl p-4 flex flex-col sm:flex-row items-center justify-between shadow-sm gap-4 print:hidden">
            <div className="flex items-center gap-2 text-sm font-medium">
              <span>Currently, viewing AI Generated Question Paper for your CBSE Class 5 Science...</span>
            </div>
@@ -179,16 +192,22 @@ export default function AssignmentResult() {
 
         {isGenerating ? (
           <div className="w-full max-w-[850px] bg-white p-16 flex flex-col items-center justify-center text-center shadow-lg rounded-b-xl min-h-[600px]">
-            <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Generating...</h3>
-            <p className="text-gray-500">Please wait while the AI structures your paper.</p>
+            <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Generating Process...</h3>
+            <p className="text-gray-500 text-lg">Please wait while the AI structures your paper.</p>
+          </div>
+        ) : showSuccessState ? (
+          <div className="w-full max-w-[850px] bg-white p-16 flex flex-col items-center justify-center text-center shadow-lg rounded-b-xl min-h-[600px]">
+            <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Generated Successfully!</h3>
+            <p className="text-gray-500 text-lg">Opening your question paper...</p>
           </div>
         ) : isFailed ? (
           <div className="w-full max-w-[850px] bg-white p-16 flex flex-col items-center justify-center text-center shadow-lg rounded-b-xl min-h-[600px]">
              <AlertCircle size={48} className="text-red-500 mb-4" />
              <h3 className="text-xl font-bold text-gray-900 mb-2">Failed to Generate</h3>
-             <p className="text-gray-500 mb-6">There was an issue creating your paper. Please try again.</p>
-             <button onClick={handleRegenerate} className="px-6 py-2 bg-primary text-white rounded-md font-medium">Try Again</button>
+             <p className="text-gray-500 mb-4">{assignment.error || "There was an issue creating your paper. Please try again."}</p>
+             <button onClick={handleRegenerate} className="px-6 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">Try Again</button>
           </div>
         ) : paper ? (
           <div className="w-full max-w-[850px] bg-white shadow-lg rounded-b-xl overflow-hidden">

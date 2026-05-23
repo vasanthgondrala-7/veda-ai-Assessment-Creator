@@ -12,7 +12,10 @@ dotenv.config();
 
 const currentDir = process.cwd();
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let ai: any = null;
+if (process.env.GEMINI_API_KEY) {
+  ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+}
 
 interface QuestionTypeConfig {
   type: string;
@@ -23,12 +26,14 @@ interface QuestionTypeConfig {
 interface Assignment {
   id: string;
   subject: string;
+  grade?: string;
   dueDate: string;
   questionTypes: QuestionTypeConfig[];
   numberOfQuestions: number;
   marks: number;
   instructions: string;
   status: 'pending' | 'generating' | 'completed' | 'failed';
+  error?: string;
   createdAt: number;
 }
 
@@ -80,6 +85,7 @@ async function startServer() {
     const newAssignment: Assignment = {
       id: assignmentId,
       subject: body.subject || 'General',
+      grade: body.grade || '',
       dueDate: body.dueDate || new Date().toISOString(),
       questionTypes: body.questionTypes || [],
       numberOfQuestions: body.numberOfQuestions || 10,
@@ -144,20 +150,26 @@ async function simulateJobQueue(assignment: Assignment, io: SocketIOServer) {
     io.emit('job:update', assignment);
     io.emit('job:completed', { assignmentId: assignment.id, paper });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Job failed:', error);
     assignment.status = 'failed';
+    assignment.error = error.message || 'An unknown error occurred';
     db.assignments.set(assignment.id, assignment);
     io.emit('job:update', assignment);
   }
 }
 
 async function generateQuestionPaper(assignment: Assignment) {
-   const typesDesc = assignment.questionTypes.map(qt => `${qt.count} questions of type '${qt.type}' worth ${qt.marks} marks combined`).join(', ');
+   if (!ai) {
+     throw new Error("Gemini API key is not configured. Please add GEMINI_API_KEY environment variable in Render.");
+   }
+
+   const typesDesc = assignment.questionTypes.map((qt: any) => `${qt.count} questions of type '${qt.type}' worth ${qt.marks} marks combined`).join(', ');
    
    const prompt = `
      You are an expert educator. Create a structured exam paper based on the following requirements:
      Subject: ${assignment.subject}
+     Grade Level: ${assignment.grade || 'Not specified'}
      Total Questions: ${assignment.numberOfQuestions}
      Total Marks: ${assignment.marks}
      Question Breakdown: ${typesDesc}

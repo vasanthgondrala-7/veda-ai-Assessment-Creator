@@ -17,9 +17,13 @@ export const useStore = create<StoreState>((set) => ({
   cachedPapers: {},
   setSidebarOpen: (open) => set({ isSidebarOpen: open }),
   setAssignments: (assignments) => set({ assignments }),
-  updateAssignment: (assignment) => set((state) => ({
-    assignments: state.assignments.map(a => a.id === assignment.id ? assignment : a)
-  })),
+  updateAssignment: (assignment) => set((state) => {
+    const exists = state.assignments.some(a => a.id === assignment.id);
+    if (exists) {
+      return { assignments: state.assignments.map(a => a.id === assignment.id ? assignment : a) };
+    }
+    return { assignments: [assignment, ...state.assignments] };
+  }),
   setCachedPaper: (id, paper) => set((state) => ({
     cachedPapers: { ...state.cachedPapers, [id]: paper }
   })),

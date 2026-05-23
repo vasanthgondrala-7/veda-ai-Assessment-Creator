@@ -98,7 +98,7 @@ export default function Dashboard() {
 }
 
 // Trigger git sync
-function AssignmentCard({ assignment, onClick }: { assignment: Assignment, onClick: () => void }) {
+function AssignmentCard({ assignment, onClick }: { assignment: Assignment, onClick: () => void, key?: string | number }) {
   const isGenerating = assignment.status === 'generating' || assignment.status === 'pending';
   
   return (

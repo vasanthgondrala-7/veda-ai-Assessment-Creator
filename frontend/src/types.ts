@@ -1,8 +1,12 @@
+// Trigger git sync render
+
 export interface Assignment {
   id: string;
   subject?: string;
+  grade?: string;
   marks?: number;
   status: 'pending' | 'generating' | 'completed' | 'failed';
+  error?: string;
   createdAt: string;
   dueDate: string;
 }
