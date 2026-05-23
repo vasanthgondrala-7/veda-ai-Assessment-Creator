@@ -1,67 +1,37 @@
-# Veda AI
+# Veda AI - AI Assessment Creator
 
-A full-stack application split into `frontend` and `backend` directories.
+An automated, full-stack AI Assessment Creator designed for educators to easily generate structured question papers. The application accepts parameters like topic, due dates, question types, difficulty, and marks, leveraging a robust backend queue system to handle LLM generation and export structured exam papers asynchronously.
 
-## Project Structure
+**Live Deployment:** [Veda AI Assessment Creator](https://ai-assessment-creator-6hcy.onrender.com)
 
-- `/frontend` - React application using Vite, Tailwind CSS, and Zustand.
-- `/backend` - Express API server integrating with Google/Gemini SDK.
+---
 
-## Running Locally
+## 🚀 Features
 
-1. Install dependencies in the root (which has a combined `package.json` for the development environment).
-   ```bash
-   npm install
-   ```
+### Core Features
+- **Assignment Creation Form:** Intuitive UI built with validation to prevent empty or negative values. Supports custom due dates, question type selection, number of questions, and distribution of marks.
+- **AI Question Generation:** Converts teacher inputs into structured, deterministic prompts. Generates cleanly divided sections (e.g., Section A, Section B) with explicit marks and difficulty tags (Easy, Moderate, Hard).
+- **Asynchronous Processing Pipeline:** Prevents request timeouts by shifting heavy LLM generation workloads to a background worker queue.
+- **Real-Time Progress Updates:** Emits real-time state changes from the backend worker directly to the client UI using WebSockets.
+- **Structured Output View:** Renders the generated question paper in a clean, high-hierarchy academic format complete with Student Info blocks (Name, Roll Number, Section).
 
-2. Start the development server (runs both frontend and backend concurrently via Vite middleware in the Express server).
-   ```bash
-   npm run dev
-   ```
+### High-Signal Bonus Features
+- **PDF Export Utility:** Converts the structured exam paper into a beautifully formatted, print-ready PDF layout rather than a raw HTML print block.
+- **Visual Distinction Badges:** Dynamically highlights question complexities via localized UI badges.
 
-3. Build for production.
-   ```bash
-   npm run build
-   ```
+---
 
-4. Start the production server.
-   ```bash
-   npm run start
-   ```
+## 🛠️ Tech Stack
 
-## Environment Variables
+- **Frontend:** React (Vite), TypeScript, Tailwind CSS, Zustand (State Management)
+- **Backend:** Node.js, Express, TypeScript
+- **Database & Caching:** MongoDB (Data Persistence), Redis (Job Tracking & Caching)
+- **Task Orchestration:** BullMQ (Background Job Queue Management)
+- **Real-time Layer:** WebSocket / Socket.io
+- **AI Integration:** Google Gemini SDK (Structured Prompt Engineering & JSON Parsing)
 
-Check `.env.example` for required environment variables.
+---
 
-## How to Push to GitHub
+## 📐 Architecture Overview
 
-1. Initialize a git repository in the root folder:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   ```
-2. Create a new repository on GitHub.
-3. Link your local repository to GitHub and push:
-   ```bash
-   git branch -M main
-   git remote add origin https://github.com/yourusername/your-repo-name.git
-   git push -u origin main
-   ```
-
-## Deployment Options
-
-Because this app has both a Node.js Express backend and a React frontend, here is the recommended way to deploy it:
-
-### Option 1: Render (Recommended for Full-Stack)
-Render can natively host this full-stack setup using the root `package.json`.
-1. Go to [Render](https://render.com/) and create a new **Web Service**.
-2. Connect your GitHub repository.
-3. Set the **Build Command** to: `npm install && npm run build`
-4. Set the **Start Command** to: `npm run start`
-5. Add your environment variables (like `GEMINI_API_KEY`) in the Render dashboard.
-
-### Option 2: Vercel (Frontend) & Railway (Backend)
-If you prefer Vercel for the frontend:
-1. **Frontend on Vercel**: Import the GitHub repo into Vercel. Set the Root Directory to `frontend`. Vercel will automatically detect Vite and build it.
-2. **Backend on Railway/Render**: You will need to separate the Express server to its own repository or explicitly point the service to the `backend` folder, and update the frontend's API URL to point to the new backend URL.
+The system architecture is engineered to isolate long-running AI processes from the main application thread to guarantee high availability and snappy responsiveness:
